@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Thread.Title}}{{.Thread.Title}}{{else}}Thread {{.Thread.ID}}{{end}} — NEO Roundtable</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .back-link { color: #38bdf8; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+        .back-link:hover { text-decoration: underline; }
+        .user-info { display: flex; align-items: center; gap: 1rem; color: #94a3b8; font-size: 0.9rem; }
+        .user-badge { background: #334155; color: #f8fafc; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; }
+        button.link-btn { background: none; border: none; color: #94a3b8; cursor: pointer; text-decoration: underline; font-size: 0.9rem; padding: 0; }
+        button.link-btn:hover { color: #f8fafc; }
+        
+        .thread-meta { background: #1e293b; padding: 1.5rem; border-radius: 8px; border: 1px solid #334155; margin-bottom: 1.5rem; }
+        .thread-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        h1 { margin: 0 0 0.5rem 0; font-size: 1.4rem; color: #e2e8f0; }
+        .id-badge { font-family: monospace; font-size: 0.8rem; color: #64748b; }
+        .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .badge-active { background: #10b98122; border: 1px solid #10b981; color: #6ee7b7; }
+        .badge-tombstoned { background: #ef444422; border: 1px solid #ef4444; color: #fca5a5; }
+        
+        .tombstone-box { margin-top: 1rem; padding: 0.75rem 1rem; background: #ef444415; border: 1px solid #ef444455; border-radius: 6px; color: #fca5a5; font-size: 0.875rem; }
+        
+        .grant-section { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+        .actor-chips { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .chip { display: inline-flex; align-items: center; background: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; gap: 0.4rem; }
+        .chip form { margin: 0; display: inline; }
+        .chip button { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 0; font-weight: bold; font-size: 0.9rem; line-height: 1; }
+        .chip button:hover { color: #f87171; }
+        .grant-form { display: inline-flex; gap: 0.5rem; }
+        select { background: #0f172a; color: #f8fafc; border: 1px solid #475569; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        button.btn-sm { padding: 0.35rem 0.7rem; border-radius: 4px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+        button.btn-danger { background: #ef444422; border: 1px solid #ef4444; color: #fca5a5; }
+        button.btn-danger:hover { background: #ef444444; }
+        button.btn-primary { background: #0284c7; color: white; }
+        button.btn-primary:hover { background: #0369a1; }
+        
+        .messages { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        .message-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; }
+        .message-card.owner-card { border-left: 4px solid #38bdf8; }
+        .message-card.tombstone-card { border-left: 4px solid #ef4444; background: #1e293b88; }
+        .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.8rem; color: #64748b; }
+        .author-badge { font-weight: 600; font-size: 0.85rem; }
+        .author-owner { color: #38bdf8; }
+        .author-ai { color: #a78bfa; }
+        .author-tombstone { color: #f87171; }
+        .message-content { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5; color: #f1f5f9; }
+        .ref-pill { margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: #0f172a; border-radius: 4px; border: 1px solid #334155; font-size: 0.8rem; color: #94a3b8; }
+        .ref-pill strong { color: #cbd5e1; }
+        
+        .compose-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; }
+        textarea { width: 100%; box-sizing: border-box; background: #0f172a; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; padding: 0.75rem; min-height: 100px; font-family: inherit; font-size: 0.95rem; resize: vertical; margin-bottom: 0.75rem; }
+        textarea:focus { outline: none; border-color: #38bdf8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back to All Threads</a>
+            <div class="user-info">
+                <span>Owner: <span class="user-badge">{{.OwnerName}}</span></span>
+                <form method="POST" action="/logout" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <button type="submit" class="link-btn">Logout</button>
+                </form>
+            </div>
+        </header>
+
+        <div class="thread-meta">
+            <div class="thread-header-row">
+                <div>
+                    <h1>{{if .Thread.Title}}{{.Thread.Title}}{{else}}<em>(untitled thread)</em>{{end}}</h1>
+                    <div class="id-badge">ID: {{.Thread.ID}} • Created: {{.Thread.CreatedAt}}</div>
+                </div>
+                <div>
+                    {{if .Thread.MarkedDeletedAt}}
+                    <span class="badge" style="background: #f59e0b22; border: 1px solid #f59e0b; color: #fcd34d;">Marked for Deletion</span>
+                    {{else if .Thread.TombstonedAt}}
+                    <span class="badge badge-tombstoned">Tombstoned</span>
+                    <form method="POST" action="/threads/{{.Thread.ID}}/delete" style="display:inline; margin-left: 0.5rem;" onsubmit="return confirm('Mark this tombstoned thread for deletion? Payloads will be hidden immediately until Garbage Collection.');">
+                        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                        <button type="submit" class="btn-sm btn-danger">Mark for Deletion</button>
+                    </form>
+                    {{else}}
+                    <span class="badge badge-active">Active</span>
+                    <form method="POST" action="/threads/{{.Thread.ID}}/tombstone" style="display:inline; margin-left: 0.5rem;" onsubmit="return confirm('Tombstone this thread? This action is terminal and immediately closes all further posts and actor access.');">
+                        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                        <button type="submit" class="btn-sm btn-danger" style="background:#ef444422; border:1px solid #ef4444; color:#fca5a5;">Tombstone Thread</button>
+                    </form>
+                    <form method="POST" action="/threads/{{.Thread.ID}}/delete" style="display:inline; margin-left: 0.5rem;" onsubmit="return confirm('Mark this thread for deletion? Payloads will be hidden immediately and all access closed until Garbage Collection.');">
+                        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                        <button type="submit" class="btn-sm btn-danger">Mark for Deletion</button>
+                    </form>
+                    {{end}}
+                </div>
+            </div>
+
+            {{if .Thread.MarkedDeletedAt}}
+            <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f59e0b15; border: 1px solid #f59e0b55; border-radius: 6px; color: #fcd34d; font-size: 0.875rem;">
+                ⚠ This thread was marked for deletion on {{.Thread.MarkedDeletedAt}}. Message payloads are hidden. Access is closed. Run <a href="/gc" style="color: #38bdf8;">Garbage Collection</a> to permanently erase content.
+            </div>
+            {{else if .Thread.TombstonedAt}}
+            <div class="tombstone-box">
+                ⚠ This thread was tombstoned on {{.Thread.TombstonedAt}}. It is retained in read-only mode for audit. AI actor access and new posts are closed.
+            </div>
+            {{else}}
+            <div class="grant-section">
+                <div class="actor-chips">
+                    <span style="font-size: 0.8rem; color: #94a3b8;">Granted Actors:</span>
+                    {{range .GrantedActors}}
+                    <span class="chip">
+                        {{.}}
+                        <form method="POST" action="/threads/{{$.Thread.ID}}/revokes">
+                            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                            <input type="hidden" name="actor" value="{{.}}">
+                            <button type="submit" title="Revoke actor access">×</button>
+                        </form>
+                    </span>
+                    {{else}}
+                    <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">No actors granted yet</span>
+                    {{end}}
+                </div>
+                {{if .AvailableActors}}
+                <form method="POST" action="/threads/{{.Thread.ID}}/grants" class="grant-form">
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <select name="actor" required>
+                        <option value="" disabled selected>Select actor to grant...</option>
+                        {{range .AvailableActors}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{end}}
+                    </select>
+                    <button type="submit" class="btn-sm btn-primary">Grant</button>
+                </form>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+
+        <div class="messages">
+            {{range .Events}}
+            {{if eq .EventKind "thread_tombstoned"}}
+            <div class="message-card tombstone-card">
+                <div class="message-header">
+                    <span class="author-badge author-tombstone">⚠ Thread Tombstoned</span>
+                    <span>#{{.ID}} • {{.CreatedAt}}</span>
+                </div>
+                <div class="message-content" style="color: #fca5a5; font-style: italic;">
+                    Thread was closed and tombstoned by {{$.OwnerName}}.
+                </div>
+            </div>
+            {{else}}
+            <div class="message-card {{if eq .ActorLabel "owner"}}owner-card{{end}}">
+                <div class="message-header">
+                    <div>
+                        {{if eq .ActorLabel "owner"}}
+                        <span class="author-badge author-owner">{{$.OwnerName}} (Owner)</span>
+                        {{else}}
+                        <span class="author-badge author-ai">{{.ActorLabel}}</span>
+                        {{end}}
+                        {{if .Purged}}
+                        <span class="badge" style="background:#64748b22; border:1px solid #64748b; color:#94a3b8; margin-left:0.4rem; font-size:0.7rem;">Purged</span>
+                        {{else if .MarkedDeleted}}
+                        <span class="badge" style="background:#f59e0b22; border:1px solid #f59e0b; color:#fcd34d; margin-left:0.4rem; font-size:0.7rem;">Marked for Deletion</span>
+                        {{end}}
+                    </div>
+                    <div>
+                        <span>#{{.ID}} • {{.CreatedAt}}</span>
+                        {{if and (not .Purged) (not .MarkedDeleted) (not $.Thread.MarkedDeletedAt)}}
+                        <form method="POST" action="/threads/{{$.Thread.ID}}/messages/{{.ID}}/delete" style="display:inline; margin-left:0.5rem;" onsubmit="return confirm('Mark message #{{.ID}} for deletion? Its payload will be immediately hidden.');">
+                            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                            <button type="submit" class="btn-sm btn-danger" style="padding: 0.15rem 0.45rem; font-size: 0.75rem;">Delete</button>
+                        </form>
+                        {{end}}
+                    </div>
+                </div>
+                {{if .Purged}}
+                <div class="message-content" style="color: #64748b; font-style: italic;">[Purged]</div>
+                {{else if .MarkedDeleted}}
+                <div class="message-content" style="color: #f59e0b; font-style: italic;">[Marked for deletion]</div>
+                {{else if .Content}}
+                <div class="message-content">{{.Content}}</div>
+                {{end}}
+                {{if .RefID}}
+                <div class="ref-pill">
+                    {{if .Reference.Accessible}}
+                    ↳ <strong>Reference to #{{.RefID}}</strong> (by {{.Reference.Event.ActorLabel}}):
+                    <em>"{{if .Reference.Event.Content}}{{.Reference.Event.Content}}{{end}}"</em>
+                    {{else}}
+                    ↳ <strong>Reference to #{{.RefID}}</strong>: <em>(Unavailable or purged)</em>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+            {{else}}
+            <div style="text-align: center; color: #64748b; padding: 2rem;">No messages in this thread yet.</div>
+            {{end}}
+        </div>
+
+        {{if and (not .Thread.TombstonedAt) (not .Thread.MarkedDeletedAt)}}
+        <div class="compose-card">
+            <form method="POST" action="/threads/{{.Thread.ID}}/messages">
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                <textarea name="content" required placeholder="Write a message to the thread as {{.OwnerName}}..."></textarea>
+                <button type="submit" class="btn-sm btn-primary" style="padding: 0.6rem 1.25rem;">Post Message</button>
+            </form>
+        </div>
+        {{end}}
+    </div>
+</body>
+</html>

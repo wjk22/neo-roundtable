@@ -1,0 +1,34 @@
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Databases / runtime state
+*.db
+*.db-shm
+*.db-wal
+data/
+run/
+
+# Build artifacts
+build/
+dist/
+target/
+bin/
+coverage/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+/roundtable

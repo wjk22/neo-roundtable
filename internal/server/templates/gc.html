@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garbage Collection — NEO Roundtable</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .back-link { color: #38bdf8; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+        .back-link:hover { text-decoration: underline; }
+        .user-info { display: flex; align-items: center; gap: 1rem; color: #94a3b8; font-size: 0.9rem; }
+        .user-badge { background: #334155; color: #f8fafc; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; }
+        button.link-btn { background: none; border: none; color: #94a3b8; cursor: pointer; text-decoration: underline; font-size: 0.9rem; padding: 0; }
+        button.link-btn:hover { color: #f8fafc; }
+        
+        .card { background: #1e293b; padding: 1.75rem; border-radius: 8px; border: 1px solid #334155; margin-bottom: 1.5rem; }
+        h1 { margin-top: 0; font-size: 1.4rem; color: #e2e8f0; }
+        p { color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; }
+        
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+        .metric-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 1.25rem; text-align: center; }
+        .metric-num { font-size: 2rem; font-weight: 700; color: #f59e0b; margin-bottom: 0.25rem; }
+        .metric-label { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        .alert-box { padding: 1rem 1.25rem; border-radius: 6px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+        .alert-warning { background: #f59e0b15; border: 1px solid #f59e0b55; color: #fcd34d; }
+        .alert-success { background: #10b98115; border: 1px solid #10b98155; color: #6ee7b7; }
+        
+        button.btn-danger { background: #dc2626; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; font-size: 0.95rem; cursor: pointer; }
+        button.btn-danger:hover { background: #b91c1c; }
+        button.btn-secondary { background: #334155; color: #f8fafc; border: none; padding: 0.75rem 1.25rem; border-radius: 6px; font-weight: 600; font-size: 0.95rem; text-decoration: none; display: inline-block; }
+        button.btn-secondary:hover { background: #475569; }
+        
+        .actions-row { display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back to All Threads</a>
+            <div class="user-info">
+                <span>Owner: <span class="user-badge">{{.OwnerName}}</span></span>
+                <form method="POST" action="/logout" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <button type="submit" class="link-btn">Logout</button>
+                </form>
+            </div>
+        </header>
+
+        <div class="card">
+            <h1>Garbage Collection & Compaction</h1>
+            <p>
+                Garbage collection permanently and irreversibly erases all marked message payloads, clears metadata on marked threads, zero-fills freed SQLite database blocks (<code>secure_delete</code>), truncates WAL files, and repacks storage via <code>VACUUM</code>.
+            </p>
+
+            {{if .Done}}
+            <div class="alert-box alert-success">
+                ✓ <strong>Garbage collection completed.</strong> Purged {{.PurgedMessages}} message payload(s) and {{.PurgedThreads}} thread(s). Database compacted successfully.
+            </div>
+            {{end}}
+
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <div class="metric-num">{{.MarkedMessages}}</div>
+                    <div class="metric-label">Marked Messages Pending GC</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-num">{{.MarkedThreads}}</div>
+                    <div class="metric-label">Marked Threads Pending GC</div>
+                </div>
+            </div>
+
+            {{if or (gt .MarkedMessages 0) (gt .MarkedThreads 0)}}
+            <div class="alert-box alert-warning">
+                ⚠ <strong>Irreversible Operation:</strong> Content payloads for marked items will be physically purged from SQLite storage. Surviving references will resolve to <code>[Purged]</code> stubs. This action cannot be undone.
+            </div>
+
+            <form method="POST" action="/gc" onsubmit="return confirm('Permanently erase all marked message payloads and threads? This action is irreversible.');">
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                <div class="actions-row">
+                    <button type="submit" class="btn-danger">Run Garbage Collection Now</button>
+                    <a href="/" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+            {{else}}
+            <div style="color: #64748b; font-style: italic; padding: 1rem 0;">
+                No items are currently marked for garbage collection.
+            </div>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>
